@@ -13,7 +13,7 @@ experiment1 = '_depl';
 %folder should contain files in format monkeyName_experimentType
 masterFilePath = uigetdir('','Select file');
 wholeFolder = dir(masterFilePath);
-wholeFolder = wholeFolder(~ismember({wholeFolder.name},{'.','..'}));
+wholeFolder = wholeFolder(~ismember({wholeFolder.name},{'.','..','.DS_Store'}));
 
 %make struct for master datasheet separated by monkey
 dataMaster = struct;
@@ -26,9 +26,11 @@ end
 %make structure with all data from each monkey in experiment1
  wholeFolderCell = struct2cell(wholeFolder);
  for i = 1:size(wholeFolderCell,2)
-     if contains(wholeFolderCell(1,i),experiment1)
+     if contains(wholeFolderCell{1,i},experiment1)
          files = dir([wholeFolderCell{2,i},filesep,wholeFolderCell{1,i}]);
-         files = files(~ismember({files.name},{'.','..'}));
+         files = files(~ismember({files.name},{'.','..','.DS_Store'}));
+     else
+         continue
      end
      for j = 1:length(files)
          matFilePath = [files(j).folder,filesep,files(j).name];
@@ -60,9 +62,9 @@ for i = 1:length(dataMaster)
             else 
                 errorCoords = [errorCoords;i,j];
             end
-        end 
-    end
-        
+        end
+end
+
  %REWARD PARAMS
  %gives rewardParamsCompiled: information about task parameters
  %across all sessions with all monkeys
@@ -78,11 +80,88 @@ for i = 1:length(dataMaster)
             if isfield(dataMaster(i).Depletion(j).Task,'reward_params')
             rewardParamsCompiled = [rewardParamsCompiled,dataMaster(i).Depletion(j).Task.reward_params];
             
-            else 
+            else
                 errorCoords = [errorCoords;i,j];
             end
-        end 
-    end
+        end
+end
+
+ %% SUMMARY OF ALL SESSIONS
+ % n x m x 4 cell array - each z stack is a monkey, rows are sessions and
+ % columns are variables
+
+ %set column titles for summary array
+ columnNames = {'TotalRewards','SessionDuration','SampleRate'};
+ summaryAll = cell(max(numSesh),length(columnNames),4);
+ for i = 1:length(columnNames)
+     summaryAll(1,i,:) = columnNames(i);
+ end
+ 
+ hoursCol = 4;
+ minsCol = 5;
+ secsCol = 6;
+ 
+ %count number of total trials for each session
+ numSesh = zeros(1,length(dataMaster));
+ for i = 1:length(dataMaster)
+     numSesh(i) = length(dataMaster(i).Depletion);
+ end
+
+ 
+ %get index i and j 
+  for i = 1:length(dataMaster)
+      for j = 1:length(dataMaster(i).Depletion)
+          rewardCount = 0;
+          
+          % add counters from each dispenser k 
+          for k = 1:length(dataMaster(i).Depletion(j).Task.Data.dispenser)
+              if isempty(dataMaster(i).Depletion(j).Task.Data.dispenser{1,k})
+                  continue
+              end
+              rewardCount = rewardCount + dataMaster(i).Depletion(j).Task. ...
+                  Data.dispenser{1,k}.Reward_counter;
+          end
+          
+          %remove first row of IR status - sample rate not consistent
+          dataMaster(i).Depletion(j).Task.Data.IRstatus(1,:) =[];
+          
+          %calculate duration of each session
+          %correct for column order if not consistent amongst sessions 
+          %hard coded columns 4-6 hours/minutes/seconds in some sessions
+          %some sessions have IR status as columns 1:4 
+          if length(unique(dataMaster(i).Depletion(j).Task.Data.IRstatus(:,minsCol))) == 1
+              %correct for inconsistent order
+              dataMaster(i).Depletion(j).Task.Data.IRstatus(:,end+1:end+hoursCol) = ...
+                  dataMaster(i).Depletion(j).Task.Data.IRstatus(:,1:hoursCol);
+              dataMaster(i).Depletion(j).Task.Data.IRstatus(:,1:hoursCol) = [];
+          end
+          
+          if dataMaster(i).Depletion(j).Task.Data.IRstatus(1,hoursCol) == ...
+                dataMaster(i).Depletion(j).Task.Data.IRstatus(end,hoursCol)
+            minuteCount = (dataMaster(i).Depletion(j).Task.Data.IRstatus(end,minsCol) ...
+                - dataMaster(i).Depletion(j).Task.Data.IRstatus(1,minsCol)) ...
+                + (dataMaster(i).Depletion(j).Task.Data.IRstatus(end,secsCol) ...
+                - dataMaster(i).Depletion(j).Task.Data.IRstatus(1,secsCol)) / 60;
+          
+          else 
+              minuteCount = dataMaster(i).Depletion(j).Task.Data.IRstatus(end,minsCol) ...
+                  + dataMaster(i).Depletion(j).Task.Data.IRstatus(end,secsCol) / 60 ...
+                  + 60 - dataMaster(i).Depletion(j).Task.Data.IRstatus(1,minsCol) ...
+                  + (60 - dataMaster(i).Depletion(j).Task.Data.IRstatus(1,secsCol)) / 60;
+          end
+          %calculate sample rate 
+          %based on number of IRstatus data points
+          %hits / minute
+          sampleRate = length(dataMaster(i).Depletion(j).Task.Data.IRstatus) / minuteCount;
+          
+          %add parameters to apropriate summary column 
+          summaryAll{j+1,1,i} = rewardCount;
+          summaryAll{j+1,2,i} = minuteCount;
+          summaryAll{j+1,3,i} = sampleRate;
+      end
+  end
+ 
+ 
  
  
  
