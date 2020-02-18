@@ -90,6 +90,12 @@ end
  % n x m x 4 cell array - each z stack is a monkey, rows are sessions and
  % columns are variables
 
+  %count number of total trials for each session
+ numSesh = zeros(1,length(dataMaster));
+ for i = 1:length(dataMaster)
+     numSesh(i) = length(dataMaster(i).Depletion);
+ end
+ 
  %set column titles for summary array
  columnNames = {'TotalRewards','SessionDuration','SampleRate'};
  summaryAll = cell(max(numSesh),length(columnNames),4);
@@ -101,11 +107,7 @@ end
  minsCol = 5;
  secsCol = 6;
  
- %count number of total trials for each session
- numSesh = zeros(1,length(dataMaster));
- for i = 1:length(dataMaster)
-     numSesh(i) = length(dataMaster(i).Depletion);
- end
+
 
  
  %get index i and j 
