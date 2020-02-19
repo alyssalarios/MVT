@@ -107,9 +107,6 @@ end
  minsCol = 5;
  secsCol = 6;
  
-
-
- 
  %get index i and j 
   for i = 1:length(dataMaster)
       for j = 1:length(dataMaster(i).Depletion)
@@ -163,10 +160,27 @@ end
       end
   end
  
- 
- 
- 
- 
+%% FILTER SESSIONS 
+% reward params for Darwin session 1 is not consistent with others
+dataFiltered = dataMaster;
+summaryFil = summaryAll;
+dataFiltered(1).Depletion(1) = [];
+
+%filter out sessions with 22 or fewer rewards or session < 20 minutes
+rewardThresh = 22;
+timeThresh = 20;
+
+for i = 1:length(dataFiltered)
+    lowHits = find(cell2mat(summaryAll(2:end,1,i)) <= rewardThresh | ...
+        cell2mat(summaryAll(2:end,2,i)) <= timeThresh);
+    dataFiltered(i).Depletion(lowHits) = [];
+    for j = 1:length(lowHits)
+        summaryFil{lowHits(j)+1,3,i} = 'filtered';
+    end
+end
+
+
+
  
  
  
