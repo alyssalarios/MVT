@@ -28,8 +28,13 @@ for i = 1:length(dataFiltered)
 end
 
 %plot dispenser distributions
+monkeyColors = [{'blue'},{'red'},{'green'},{'magenta'}];
+subplot(1,2,1);
 b = bar(avPercentHits);
-set (gca,'XTickLabel',dispensers);
+set(gca,'XTickLabel',dispensers);
+for i = 1:length(monkeyColors)
+    b(i).FaceColor = monkeyColors{i}
+end
 hold on 
 
 ax1 = [0.75 1.75 2.75 3.75];
@@ -56,16 +61,64 @@ title('Dispenser Preferences')
 xlabel('Dispenser')
 ylabel('mean Percent of total breaks per session')
 
-%% 
 %% Calculate remaining rewards at dispenser switch 
-% switch_tracker = zeros(length(dispensers),1);
-% for i = 1:length(dispensers)
-%     x = find(dispensers(i,:)==1); %this finds what column an IR trigger occured
-%     if ~isempty(x) %if an IR trigger did occur, write down in a separate variable what dispenser it occured at (ex. [2 2 4 0 4 4 2]
-%         switch_tracker(i,1) = find(dispensers(i,:)==1);
-%     else
-%     end
-% end
+
+% dispenser IDs for IRstatus sheet : 7,8,9,10 corresponds to box 1,2,3,4 
+% add column to dataFiltered that describes which dispenser is opened/
+% closed
+% this is last column on datasheet
+firstDispenser = 7;
+for i = 1:length(dataFiltered)
+    for j = 1:length(dataFiltered(i).Depletion)
+    session = dataFiltered(i).Depletion(j).Task.Data.IRstatus(:,firstDispenser:end);
+    dispenserNum = zeros(length(session),1);
+    for k = 1:length(session)
+        x = find(session(k,:)==1); %this finds what column an IR trigger occured
+        if k == 1
+            dispenserNum(k,1) = find(session(k,:),1,'first');
+        elseif ~isempty(x) %if an IR trigger did occur, write down in a separate variable what dispenser it occured at (ex. [2 2 4 0 4 4 2]
+            dispenserNum(k,1) = find(session(k,:),1,'first');
+        else 
+            dispenserNum(k,1) = - dispenserNum(k-1,1); %negative values = remove hand from apropriate dispenser
+        end
+    end
+    dataFiltered(i).Depletion(j).Task.Data.IRstatus(:,end+1) = dispenserNum;
+    dataFiltered(i).Depletion(j).Task.Data.IRstatus(1,end+1) = 0;
+      dataFiltered(i).Depletion(j).Task.Data.IRstatus(2:end,end) = diff(abs(dispenserNum));
+     
+    end
+end
+%% 
+% count aveg number of switches
+avgSwitchAll = zeros(1,length(dataFiltered));
+for i = 1:length(dataFiltered)
+    for j = 1:length(dataFiltered(i).Depletion)
+        session = dataFiltered(i).Depletion(j).Task.Data.IRstatus(:,12);
+        counter = 0;
+        sameDispenser = [];
+        for k = 1:length(session)
+            if session(k) == 0
+                counter = counter + 1;
+            elseif session(k) ~= 0
+                sameDispenser = [sameDispenser;ceil(counter/2)];
+                counter = 0;
+            end
+        end
+        repeatSwitches(j,:,i) = [mean(sameDispenser),sum(abs(session(:,end))>0)];
+    end
+end
+
+%plot number of trials by switches per monkey 
+
+subplot(1,2,2);
+for i = 1:size(repeatSwitches,3)
+scatter(repeatSwitches(:,1,i),repeatSwitches(:,2,i),monkeyColors{i},'filled');
+    hold on 
+end
+legend(dataFiltered.monkey)
+title('IR breaks v. # switches')
+xlabel('avg IR breaks before switching')
+ylabel('number of switches per session')
 
 %% function to call master data and summary data
 function data = masterLoad()

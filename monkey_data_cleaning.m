@@ -166,6 +166,17 @@ dataFiltered = dataMaster;
 summaryFil = summaryAll;
 dataFiltered(1).Depletion(1) = [];
 
+% filter sessions that begin with IR UNbreak
+for i = 1:length(dataMaster)
+    for j = 1:length(dataMaster(i).Depletion)
+        IRbreaks = dataMaster(i).Depletion(j).Task.Data.IRstatus(:,7:end);
+        if isempty(find(IRbreaks(1,:) == 1,1))
+            dataFiltered(i).Depletion(j).Task.Data.IRstatus(1,:) = [];
+        end
+    end
+end
+
+
 %filter out sessions with 22 or fewer rewards or session < 20 minutes
 rewardThresh = 22;
 timeThresh = 20;
@@ -178,6 +189,8 @@ for i = 1:length(dataFiltered)
         summaryFil{lowHits(j)+1,3,i} = 'filtered';
     end
 end
+
+
 
 
 
