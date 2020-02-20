@@ -160,6 +160,23 @@ end
       end
   end
  
+  
+  %% MAKE REWARD LOG FOR IZZY
+  for i = 1:length(dataMaster(3).Depletion)
+      counter = 0;
+      dataMaster(3).Depletion(i).Task.dispLog = [];
+     
+      for j = 1:4
+          if isfield(dataMaster(3).Depletion(i).Task.Data.dispenser{1,k},'log') ...
+                  & length(dataMaster(3).Depletion(i).Task.Data.dispenser)  j
+          if 
+              continue
+          else
+              dataMaster(3).Depletion(i).Task.dispLog = dataMaster(3).Depletion(i).Task.Data.dispenser{1,j};
+              
+          end
+      end
+  end
 %% FILTER SESSIONS 
 % reward params for Darwin session 1 is not consistent with others
 dataFiltered = dataMaster;

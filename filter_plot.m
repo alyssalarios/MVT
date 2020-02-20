@@ -109,7 +109,7 @@ for i = 1:length(dataFiltered)
 end
 
 %plot number of trials by switches per monkey 
-
+%Tigger skews data, plot repeatSwitches(:,:,3) to see distribution
 subplot(1,2,2);
 for i = 1:size(repeatSwitches,3)
 scatter(repeatSwitches(:,1,i),repeatSwitches(:,2,i),monkeyColors{i},'filled');
@@ -119,6 +119,29 @@ legend(dataFiltered.monkey)
 title('IR breaks v. # switches')
 xlabel('avg IR breaks before switching')
 ylabel('number of switches per session')
+
+%% add column to datasheet that is logical reward IR break or not 
+IRCombined = struct;
+dispLogComb = struct;
+for i = 1:length(dataFiltered)
+        IRCombined(i).monkey = dataFiltered(i).monkey;
+        dispLogComb(i).monkey = dataFiltered(i).monkey;
+        IRCombined(i).IRdata = [];
+        dispLogComb(i).Log = [];
+        for j = 1:length(dataFiltered(i).Depletion) 
+            %check isfield(struct,'log') before iterating through, if not,
+            %add dataMaster(3).Depletion(i).Task.dispLog to dispLogComb
+            IRCombined(i).IRdata = [IRCombined(i).IRdata;dataFiltered(i).Depletion(j).Task.Data.IRstatus];
+            logArray = [];
+            for k = 1:4
+                if ~isempty(dataFiltered(i).Depletion(j).Task.Data.dispenser{1,k})
+                    logArray = [logArray;table2array(dataFiltered(i).Depletion(j).Task.Data.dispenser{1,k}.log)];
+           
+                end
+            end
+            dispLogComb(i).Log = logArray
+        end
+  end
 
 %% function to call master data and summary data
 function data = masterLoad()
