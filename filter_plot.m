@@ -1,7 +1,7 @@
 %% explore depletion data 
 %load filtered Data
-dataFiltered = masterLoad();
-summaryFil = summaryLoad();
+[dataFiltered,summaryFil,Compiled] = masterLoad();
+
 %% distribution between dispensers
 dispensers = categorical({'1','2','3','4'});
 %count dispenser hits
@@ -67,7 +67,7 @@ ylabel('mean Percent of total breaks per session')
 % add column to dataFiltered that describes which dispenser is opened/
 % closed
 % this is last column on datasheet
-firstDispenser = 7;
+% firstDispenser = 7;
 for i = 1:length(dataFiltered)
     for j = 1:length(dataFiltered(i).Depletion)
     session = dataFiltered(i).Depletion(j).Task.Data.IRstatus(:,firstDispenser:end);
@@ -88,6 +88,25 @@ for i = 1:length(dataFiltered)
      
     end
 end
+firstDispenser = 7;
+for i = 1:length(Compiled)
+    dispenserNum = zeros(length(Compiled(i).allIR),1);
+    for j = 1:length(dispenserNum)
+        dispHits = Compiled(i).allIR(:,firstDispenser:firstDispenser+3);
+        x = find(dispHits(j,:) == 1);
+        if ~isempty(x)
+            dispenserNum(j,1) = x;
+        else 
+            dispenserNum(j,1) = - dispenserNum(j-1,1);
+        end
+    end
+    Compiled(i).allIR(:,end+1) = dispenserNum;
+    Compiled(i).allIR(1,end+1) = 0;
+    Compiled(i).allIR(2:end,end) = diff(abs(dispenserNum));
+end
+        
+    
+
 %% 
 % count aveg number of switches
 avgSwitchAll = zeros(1,length(dataFiltered));
@@ -121,34 +140,12 @@ xlabel('avg IR breaks before switching')
 ylabel('number of switches per session')
 
 %% add column to datasheet that is logical reward IR break or not 
-IRCombined = struct;
-dispLogComb = struct;
-for i = 1:length(dataFiltered)
-        IRCombined(i).monkey = dataFiltered(i).monkey;
-        dispLogComb(i).monkey = dataFiltered(i).monkey;
-        IRCombined(i).IRdata = [];
-        dispLogComb(i).Log = [];
-        for j = 1:length(dataFiltered(i).Depletion) 
-            %check isfield(struct,'log') before iterating through, if not,
-            %add dataMaster(3).Depletion(i).Task.dispLog to dispLogComb
-            IRCombined(i).IRdata = [IRCombined(i).IRdata;dataFiltered(i).Depletion(j).Task.Data.IRstatus];
-            logArray = [];
-            for k = 1:4
-                if ~isempty(dataFiltered(i).Depletion(j).Task.Data.dispenser{1,k})
-                    logArray = [logArray;table2array(dataFiltered(i).Depletion(j).Task.Data.dispenser{1,k}.log)];
-           
-                end
-            end
-            dispLogComb(i).Log = logArray
-        end
-  end
 
 %% function to call master data and summary data
-function data = masterLoad()
+function [data,summary,compiled] = masterLoad()
     monkey_data_cleaning
     data = dataFiltered;
-end
-function summary = summaryLoad()
-    monkey_data_cleaning
     summary = summaryFil;
+    compiled = Compiled;
 end
+
