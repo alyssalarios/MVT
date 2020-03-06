@@ -67,7 +67,7 @@ ylabel('mean Percent of total breaks per session')
 % add column to dataFiltered that describes which dispenser is opened/
 % closed
 % this is last column on datasheet
-% firstDispenser = 7;
+firstDispenser = 7;
 for i = 1:length(dataFiltered)
     for j = 1:length(dataFiltered(i).Depletion)
     session = dataFiltered(i).Depletion(j).Task.Data.IRstatus(:,firstDispenser:end);
@@ -104,8 +104,8 @@ for i = 1:length(Compiled)
     Compiled(i).allIR(1,end+1) = 0;
     Compiled(i).allIR(2:end,end) = diff(abs(dispenserNum));
 end
-        
-    
+ 
+%find which IR breaks are rewards and which are false - logical
 
 %% 
 % count aveg number of switches
@@ -140,7 +140,16 @@ xlabel('avg IR breaks before switching')
 ylabel('number of switches per session')
 
 %% add column to datasheet that is logical reward IR break or not 
-
+for i = 1:length(Compiled)
+    irTimes = Compiled(i).allIR(:,1:6);
+    irTimes(:,6) = round(irTimes(:,6));
+    irTimes = datetime(irTimes);
+    rwdTimes = Compiled(i).allRewards(:,1:6);
+    rwdTimes(:,6) = round(rwdTimes(:,6) - 0.5);
+    rwdTimes = datetime(rwdTimes);
+    intersections = intersect(irTimes,rwdTimes);
+    Compiled(i).allIR(:,end)= ismember(irTimes,intersections);
+end
 %% function to call master data and summary data
 function [data,summary,compiled] = masterLoad()
     monkey_data_cleaning
