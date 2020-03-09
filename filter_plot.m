@@ -88,7 +88,11 @@ for i = 1:length(dataFiltered)
      
     end
 end
-firstDispenser = 7;
+%repeat this procedute on Compiled datasheet
+%allIR columns: 1:6 is datetime , 7:10 is dispenser status, 11 is tells
+%which dispenser is being turned on or off, 12 describes transition: 
+% PROBLEM : cannot distinguish between 1-3 swtich and 2-4 switch since
+% using differences ..
 for i = 1:length(Compiled)
     dispenserNum = zeros(length(Compiled(i).allIR),1);
     for j = 1:length(dispenserNum)
@@ -105,10 +109,10 @@ for i = 1:length(Compiled)
     Compiled(i).allIR(2:end,end) = diff(abs(dispenserNum));
 end
  
-%find which IR breaks are rewards and which are false - logical
+
 
 %% 
-% count aveg number of switches
+% count avg number of switches
 avgSwitchAll = zeros(1,length(dataFiltered));
 for i = 1:length(dataFiltered)
     for j = 1:length(dataFiltered(i).Depletion)
@@ -140,6 +144,8 @@ xlabel('avg IR breaks before switching')
 ylabel('number of switches per session')
 
 %% add column to datasheet that is logical reward IR break or not 
+% problem: rewards matched to IR is greater than number of reward hits -
+% multiple ir breaks are being matched by intersection points
 for i = 1:length(Compiled)
     irTimes = Compiled(i).allIR(:,1:6);
     irTimes(:,6) = round(irTimes(:,6));
@@ -148,7 +154,7 @@ for i = 1:length(Compiled)
     rwdTimes(:,6) = round(rwdTimes(:,6) - 0.5);
     rwdTimes = datetime(rwdTimes);
     intersections = intersect(irTimes,rwdTimes);
-    Compiled(i).allIR(:,end)= ismember(irTimes,intersections);
+    Compiled(i).allIR(:,end+1)= ismember(irTimes,intersections);
 end
 %% function to call master data and summary data
 function [data,summary,compiled] = masterLoad()

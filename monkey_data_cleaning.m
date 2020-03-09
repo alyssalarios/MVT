@@ -97,7 +97,7 @@ for i = 1:length(dataMaster)
 end
 
 %set column titles for summary array
-columnNames = {'TotalRewards','SessionDuration','SampleRate'};
+columnNames = {'TotalRewards','SessionDuration (min)','SampleRate (hit/min)'};
 summaryAll = cell(max(numSesh),length(columnNames),4);
 for i = 1:length(columnNames)
     summaryAll(1,i,:) = columnNames(i);
@@ -121,7 +121,8 @@ for i = 1:length(dataMaster)
                 Data.dispenser{1,k}.Reward_counter;
         end
         
-        %remove first row of IR status - sample rate not consistent
+        %remove first row of IR status - some sessions start with neg IR break
+        
         dataMaster(i).Depletion(j).Task.Data.IRstatus(1,:) =[];
         
         %calculate duration of each session
@@ -148,10 +149,11 @@ for i = 1:length(dataMaster)
                 + 60 - dataMaster(i).Depletion(j).Task.Data.IRstatus(1,minsCol) ...
                 + (60 - dataMaster(i).Depletion(j).Task.Data.IRstatus(1,secsCol)) / 60;
         end
-        %calculate sample rate
-        %based on number of IRstatus data points
-        %hits / minute
-        sampleRate = length(dataMaster(i).Depletion(j).Task.Data.IRstatus) / minuteCount;
+        %calculate sample rate for rough estimate of monkey engagement
+        %based on number of IRstatus data points / 2 (break/unbreak pair)
+        %rows /2 / minute
+        
+        sampleRate = length(dataMaster(i).Depletion(j).Task.Data.IRstatus) /2 / minuteCount;
         
         %add parameters to apropriate summary column
         summaryAll{j+1,1,i} = rewardCount;
@@ -161,10 +163,12 @@ for i = 1:length(dataMaster)
 end
 
 
-%% MAKE REWARD LOG FOR IZZY
+%% MAKE REWARD LOG FOR ALL EXPERIMENTS
+%reward pulse sheet collected differently for izzy and tigger
 for a = 3:4
     counter = 0;
     for i = 1:length(dataMaster(a).Depletion)
+        %initiate location for data storage
         logConcat = [];
         dataMaster(a).Depletion(i).Task.dispLog = [];
         reward_time = [];
@@ -172,13 +176,17 @@ for a = 3:4
         reward_length = [];
         total_quantity = [];
         for j = 1:4
+            %avoid index growing larger than data in struct 
             if length(dataMaster(a).Depletion(i).Task.Data.dispenser) < j ...
                     || isempty(dataMaster(a).Depletion(i).Task.Data.dispenser{1,j})
-                % || ~istable(dataMaster(3).Depletion(i).Task.Data.dispenser{1,j}.log)
+                %or indexing an empty cell
                 counter = counter + 1;
                 continue
+                % if there are no fields with log or if the field 'log' is
+                % not already a table...
             elseif ~isfield(dataMaster(a).Depletion(i).Task.Data.dispenser{1,j},'log') ...
                     || ~istable(dataMaster(a).Depletion(i).Task.Data.dispenser{1,j}.log)
+                %put data into initated arrays
                 reward_time = [reward_time;dataMaster(a).Depletion(i).Task.Data.dispenser{1,j}.Reward_time];
                 
                 reward_pulse = [reward_pulse;dataMaster(a).Depletion(i).Task.Data.dispenser{1,j}.Reward_pulse'];
@@ -189,7 +197,7 @@ for a = 3:4
                 logConcat = [reward_time,reward_pulse,reward_length,total_quantity];
                 
             else
-                
+                %otherwise take log table and add to logConcat
                 logTable = table2array(dataMaster(a).Depletion(i).Task.Data.dispenser{1,j}.log);
                 logConcat = [logConcat;logTable];
             end
@@ -198,6 +206,11 @@ for a = 3:4
         end
     end
 end
+%this gives a Field 'DispLog' for every session for Tigger and Izzy
+%containing information about the rewards from all dispensers combined for
+%that session. --Problem: this loses inforation about which dispenser gave
+%that reward, but cross referencing on the IR log for that reward time
+%can give this information.
 
 %% FILTER SESSIONS
 % reward params for Darwin session 1 is not consistent with others
@@ -216,7 +229,8 @@ for i = 1:length(dataMaster)
 end
 
 
-%filter out sessions with 22 or fewer rewards or session < 20 minutes
+%filter out sessions with too few rewards or a short session
+%free parameters
 rewardThresh = 22;
 timeThresh = 20;
 
@@ -230,6 +244,8 @@ for i = 1:length(dataFiltered)
 end
 
 %% COMPILE ALL SESSIONS in dataFiltered and add as new fields
+%gives a variable 'Compiled' with monkeys, allIR, and allRewards as fields
+%containing every session concatenated for each monkey 
 Compiled = dataFiltered;
 Compiled = rmfield(Compiled,'Depletion');
 for i = 1:length(Compiled)
