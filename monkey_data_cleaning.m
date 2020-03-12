@@ -274,11 +274,26 @@ for i = 1:length(Compiled)
         end
     IRs = [Compiled(i).allIR;dataFiltered(i).Depletion(j).Task.Data.IRstatus];
     Compiled(i).allIR = IRs;
-    end
-    
-                     
+    end                 
 end
 
+% for i = 1:length(Compiled)
+%     %make table for allRewards
+%     DateTime = Compiled(i).allRewards(:,1:6);
+%     Pulses = Compiled(i).allRewards(:,7);
+%     PulseDuration = Compiled(i).allRewards(:,8);
+%     Volume = Compiled(i).allRewards(:,9);
+%     T = table(DateTime,Pulses,PulseDuration,Volume);
+%     Compiled(i).allRewards = T;
+%     
+%     %now with IR
+%     DateTime = Compiled(i).allIR(:,1:6);
+%     Dispensers = Compiled(i).allIR(:,7:10);
+%     ONOFF = Compiled(i).allIR(:,11);
+%     Switch = Compiled(i).allIR(:,12);
+%     T = table(DateTime,Dispensers,ONOFF,Switch);
+%     Compiled(i).allIR = T;
+% end
 
 
 

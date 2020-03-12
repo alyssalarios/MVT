@@ -33,7 +33,7 @@ subplot(1,2,1);
 b = bar(avPercentHits);
 set(gca,'XTickLabel',dispensers);
 for i = 1:length(monkeyColors)
-    b(i).FaceColor = monkeyColors{i}
+    b(i).FaceColor = monkeyColors{i};
 end
 hold on 
 
@@ -100,7 +100,7 @@ for i = 1:length(Compiled)
         x = find(dispHits(j,:) == 1);
         if ~isempty(x)
             dispenserNum(j,1) = x;
-        else 
+        else
             dispenserNum(j,1) = - dispenserNum(j-1,1);
         end
     end
@@ -155,6 +155,25 @@ for i = 1:length(Compiled)
     rwdTimes = datetime(rwdTimes);
     intersections = intersect(irTimes,rwdTimes);
     Compiled(i).allIR(:,end+1)= ismember(irTimes,intersections);
+end
+
+%% TURN COMPILED INTO TABLE 
+for i = 1:length(Compiled)
+    %make table for allRewards
+    DateTime = Compiled(i).allRewards(:,1:6);
+    Pulses = Compiled(i).allRewards(:,7);
+    PulseDuration = Compiled(i).allRewards(:,8);
+    Volume = Compiled(i).allRewards(:,9);
+    T = table(DateTime,Pulses,PulseDuration,Volume);
+    Compiled(i).allRewards = T;
+    
+    %now with IR
+    DateTime = Compiled(i).allIR(:,1:6);
+    Dispensers = Compiled(i).allIR(:,7:10);
+    ONOFF = Compiled(i).allIR(:,11);
+    Switch = Compiled(i).allIR(:,12);
+    T = table(DateTime,Dispensers,ONOFF,Switch);
+    Compiled(i).allIR = T;
 end
 %% function to call master data and summary data
 function [data,summary,compiled] = masterLoad()
