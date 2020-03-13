@@ -94,19 +94,25 @@ end
 % PROBLEM : cannot distinguish between 1-3 swtich and 2-4 switch since
 % using differences ..
 for i = 1:length(Compiled)
-    dispenserNum = zeros(length(Compiled(i).allIR),1);
-    for j = 1:length(dispenserNum)
+    dispenserNum = zeros(length(Compiled(i).allIR),2);
+    for j = 2:length(dispenserNum)
         dispHits = Compiled(i).allIR(:,firstDispenser:firstDispenser+3);
         x = find(dispHits(j,:) == 1);
         if ~isempty(x)
             dispenserNum(j,1) = x;
         else
             dispenserNum(j,1) = - dispenserNum(j-1,1);
+            
+        end
+        if abs(dispenserNum(j-1,1)) ~= abs(dispenserNum(j,1))
+            prev = string(abs(dispenserNum(j-1,1)));
+            curr = string(abs(dispenserNum(j,1)));
+            new = strcat(prev,curr);
+            dispenserNum(j,2) = str2double(new);
         end
     end
-    Compiled(i).allIR(:,end+1) = dispenserNum;
-    Compiled(i).allIR(1,end+1) = 0;
-    Compiled(i).allIR(2:end,end) = diff(abs(dispenserNum));
+    Compiled(i).allIR = cat(2,Compiled(i).allIR,dispenserNum);
+ 
 end
  
 
@@ -172,7 +178,8 @@ for i = 1:length(Compiled)
     Dispensers = Compiled(i).allIR(:,7:10);
     ONOFF = Compiled(i).allIR(:,11);
     Switch = Compiled(i).allIR(:,12);
-    T = table(DateTime,Dispensers,ONOFF,Switch);
+    Reward = Compiled(i).allIR(:,end);
+    T = table(DateTime,Dispensers,ONOFF,Switch,Reward);
     Compiled(i).allIR = T;
 end
 %% function to call master data and summary data
